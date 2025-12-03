@@ -1,0 +1,814 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fumav Card Orchestrator - Live Dashboard</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+            background: #0f172a;
+            color: #e2e8f0;
+            padding: 24px;
+            line-height: 1.6;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        
+        /* Header */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 32px;
+        }
+        
+        .header h1 {
+            font-size: 28px;
+            font-weight: 700;
+            color: white;
+        }
+        
+        .status-indicator {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+            color: #10b981;
+        }
+        
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            background: #10b981;
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        
+        /* System Status Cards */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 16px;
+            margin-bottom: 32px;
+        }
+        
+        .stat-card {
+            background: #1e293b;
+            border: 1px solid #334155;
+            border-radius: 12px;
+            padding: 20px;
+        }
+        
+        .stat-label {
+            font-size: 13px;
+            color: #94a3b8;
+            margin-bottom: 8px;
+        }
+        
+        .stat-value {
+            font-size: 28px;
+            font-weight: 700;
+            color: white;
+        }
+        
+        /* Main Transaction Card */
+        .transaction-card {
+            background: #1e293b;
+            border: 1px solid #334155;
+            border-radius: 12px;
+            padding: 32px;
+            margin-bottom: 24px;
+        }
+        
+        .transaction-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid #334155;
+        }
+        
+        .transaction-title {
+            font-size: 20px;
+            font-weight: 600;
+            color: white;
+        }
+        
+        .transaction-id {
+            font-size: 13px;
+            color: #94a3b8;
+            font-family: 'Courier New', monospace;
+        }
+        
+        /* Transaction Details */
+        .transaction-details {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 16px;
+            margin-bottom: 32px;
+            padding: 20px;
+            background: #0f172a;
+            border-radius: 8px;
+        }
+        
+        .detail-item {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+        
+        .detail-label {
+            font-size: 12px;
+            color: #94a3b8;
+        }
+        
+        .detail-value {
+            font-size: 15px;
+            color: white;
+            font-weight: 500;
+        }
+        
+        /* Pipeline Section */
+        .pipeline {
+            margin-bottom: 32px;
+        }
+        
+        .pipeline-header {
+            font-size: 18px;
+            font-weight: 600;
+            color: white;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .pipeline-step {
+            background: #0f172a;
+            border: 1px solid #334155;
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            opacity: 0.4;
+            transition: all 0.3s ease;
+        }
+        
+        .pipeline-step.active {
+            opacity: 1;
+            border-color: #3b82f6;
+            background: linear-gradient(to right, #1e3a8a 0%, #0f172a 100%);
+        }
+        
+        .pipeline-step.complete {
+            opacity: 1;
+            border-color: #10b981;
+            background: linear-gradient(to right, #064e3b 0%, #0f172a 100%);
+        }
+        
+        .step-info {
+            flex: 1;
+        }
+        
+        .step-title {
+            font-size: 15px;
+            font-weight: 600;
+            color: white;
+            margin-bottom: 4px;
+        }
+        
+        .step-details {
+            font-size: 13px;
+            color: #94a3b8;
+            line-height: 1.5;
+        }
+        
+        .step-status {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .step-time {
+            font-size: 13px;
+            color: #3b82f6;
+            font-weight: 600;
+        }
+        
+        .step-icon {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+        }
+        
+        .step-icon.pending {
+            background: #334155;
+            color: #64748b;
+        }
+        
+        .step-icon.active {
+            background: #3b82f6;
+            color: white;
+            animation: spin 1s linear infinite;
+        }
+        
+        .step-icon.complete {
+            background: #10b981;
+            color: white;
+        }
+        
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+        
+        /* Settlement Complete */
+        .settlement-complete {
+            background: linear-gradient(135deg, #064e3b 0%, #0f172a 100%);
+            border: 2px solid #10b981;
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 32px;
+            display: none;
+        }
+        
+        .settlement-complete.show {
+            display: block;
+        }
+        
+        .settlement-header {
+            font-size: 20px;
+            font-weight: 700;
+            color: #10b981;
+            margin-bottom: 16px;
+        }
+        
+        .tx-hash {
+            background: #0f172a;
+            border: 1px solid #334155;
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 16px;
+        }
+        
+        .tx-label {
+            font-size: 12px;
+            color: #94a3b8;
+            margin-bottom: 8px;
+        }
+        
+        .tx-value {
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            color: #60a5fa;
+            word-break: break-all;
+        }
+        
+        .explorer-link {
+            color: #60a5fa;
+            text-decoration: none;
+            font-size: 14px;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+        
+        .explorer-link:hover {
+            color: #93c5fd;
+            text-decoration: underline;
+        }
+        
+        /* Cost Comparison */
+        .cost-comparison {
+            background: #1e293b;
+            border: 1px solid #334155;
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 24px;
+        }
+        
+        .comparison-header {
+            font-size: 18px;
+            font-weight: 600;
+            color: white;
+            margin-bottom: 20px;
+        }
+        
+        .comparison-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 24px;
+            margin-bottom: 20px;
+        }
+        
+        .comparison-item {
+            padding: 20px;
+            border-radius: 8px;
+        }
+        
+        .comparison-item.traditional {
+            background: linear-gradient(135deg, #7f1d1d 0%, #450a0a 100%);
+            border: 1px solid #991b1b;
+        }
+        
+        .comparison-item.fumav {
+            background: linear-gradient(135deg, #064e3b 0%, #022c22 100%);
+            border: 1px solid #059669;
+        }
+        
+        .comparison-label {
+            font-size: 13px;
+            color: #94a3b8;
+            margin-bottom: 8px;
+        }
+        
+        .comparison-fee {
+            font-size: 32px;
+            font-weight: 700;
+            color: white;
+            margin-bottom: 4px;
+        }
+        
+        .comparison-percent {
+            font-size: 16px;
+            color: #94a3b8;
+            margin-bottom: 12px;
+        }
+        
+        .comparison-details {
+            font-size: 13px;
+            color: #cbd5e1;
+            line-height: 1.6;
+        }
+        
+        .savings-banner {
+            background: linear-gradient(90deg, #064e3b 0%, #065f46 100%);
+            border: 2px solid #10b981;
+            border-radius: 8px;
+            padding: 16px;
+            text-align: center;
+        }
+        
+        .savings-text {
+            font-size: 18px;
+            font-weight: 600;
+            color: #10b981;
+        }
+        
+        .savings-amount {
+            font-size: 28px;
+            font-weight: 700;
+            color: white;
+        }
+        
+        /* Recent Transactions */
+        .recent-transactions {
+            background: #1e293b;
+            border: 1px solid #334155;
+            border-radius: 12px;
+            padding: 24px;
+        }
+        
+        .recent-header {
+            font-size: 18px;
+            font-weight: 600;
+            color: white;
+            margin-bottom: 16px;
+        }
+        
+        .transaction-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        
+        .transaction-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px;
+            background: #0f172a;
+            border: 1px solid #334155;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+        
+        .transaction-empty {
+            color: #64748b;
+            font-size: 14px;
+            text-align: center;
+            padding: 20px;
+        }
+        
+        /* Control Button */
+        .control-button {
+            background: #3b82f6;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            padding: 12px 24px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .control-button:hover {
+            background: #2563eb;
+        }
+        
+        .control-button:disabled {
+            background: #334155;
+            cursor: not-allowed;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <h1>FUMAV CARD ORCHESTRATOR</h1>
+            <div class="status-indicator">
+                <div class="status-dot"></div>
+                <span>Live</span>
+            </div>
+        </div>
+        
+        <!-- System Status -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-label">Active Transactions</div>
+                <div class="stat-value" id="activeCount">0</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Treasury Balance</div>
+                <div class="stat-value">9,925 USDC</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Success Rate</div>
+                <div class="stat-value">100%</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Avg Settlement</div>
+                <div class="stat-value">2.1s</div>
+            </div>
+        </div>
+        
+        <!-- Main Transaction Card -->
+        <div class="transaction-card">
+            <div class="transaction-header">
+                <div>
+                    <div class="transaction-title">⚡ Transaction in Progress</div>
+                </div>
+                <div class="transaction-id">TXN-2024-11-09-00847</div>
+            </div>
+            
+            <!-- Transaction Details -->
+            <div class="transaction-details">
+                <div class="detail-item">
+                    <div class="detail-label">Consumer</div>
+                    <div class="detail-value">player1@test.com</div>
+                </div>
+                <div class="detail-item">
+                    <div class="detail-label">Consumer ID</div>
+                    <div class="detail-value">CONS-48291</div>
+                </div>
+                <div class="detail-item">
+                    <div class="detail-label">Merchant</div>
+                    <div class="detail-value">GameStudio Alpha</div>
+                </div>
+                <div class="detail-item">
+                    <div class="detail-label">Merchant ID</div>
+                    <div class="detail-value">MERCH-10293</div>
+                </div>
+                <div class="detail-item">
+                    <div class="detail-label">Amount</div>
+                    <div class="detail-value">$75.00 USD → 75.00 USDC</div>
+                </div>
+                <div class="detail-item">
+                    <div class="detail-label">Category</div>
+                    <div class="detail-value">Digital Goods - Gaming</div>
+                </div>
+            </div>
+            
+            <!-- Authorization Pipeline -->
+            <div class="pipeline">
+                <div class="pipeline-header">🔐 Authorization Pipeline</div>
+                
+                <div class="pipeline-step" id="step1">
+                    <div class="step-info">
+                        <div class="step-title">Consumer Authentication</div>
+                        <div class="step-details">Device: iPhone 15 • Location: San Francisco, CA • Biometric: Passed</div>
+                    </div>
+                    <div class="step-status">
+                        <div class="step-time">12ms</div>
+                        <div class="step-icon pending">⏱</div>
+                    </div>
+                </div>
+                
+                <div class="pipeline-step" id="step2">
+                    <div class="step-info">
+                        <div class="step-title">Credit Limit Check</div>
+                        <div class="step-details">Current: $0.00 • Limit: $500.00 • Available: $500.00 ✓ • After: $425.00</div>
+                    </div>
+                    <div class="step-status">
+                        <div class="step-time">45ms</div>
+                        <div class="step-icon pending">⏱</div>
+                    </div>
+                </div>
+                
+                <div class="pipeline-step" id="step3">
+                    <div class="step-info">
+                        <div class="step-title">Fraud Detection (ML Model)</div>
+                        <div class="step-details">Risk Score: 0.02/1.00 (Very Low) • Velocity: Normal • Device: Known • History: 3 purchases</div>
+                    </div>
+                    <div class="step-status">
+                        <div class="step-time">28ms</div>
+                        <div class="step-icon pending">⏱</div>
+                    </div>
+                </div>
+                
+                <div class="pipeline-step" id="step4">
+                    <div class="step-info">
+                        <div class="step-title">KYC/AML Compliance Check</div>
+                        <div class="step-details">Consumer KYC: Verified • Merchant KYB: Verified • Sanctions: Clear • Flags: None</div>
+                    </div>
+                    <div class="step-status">
+                        <div class="step-time">15ms</div>
+                        <div class="step-icon pending">⏱</div>
+                    </div>
+                </div>
+                
+                <div class="pipeline-step" id="step5">
+                    <div class="step-info">
+                        <div class="step-title">Issuing Bank Authorization</div>
+                        <div class="step-details">Bank: Unit.co (Evolve) • Status: Active • Response: APPROVED • Auth Code: 847291</div>
+                    </div>
+                    <div class="step-status">
+                        <div class="step-time">67ms</div>
+                        <div class="step-icon pending">⏱</div>
+                    </div>
+                </div>
+                
+                <div class="pipeline-step" id="stepApproved" style="display: none; background: linear-gradient(90deg, #064e3b 0%, #0f172a 100%); border-color: #10b981;">
+                    <div class="step-info">
+                        <div class="step-title" style="color: #10b981; font-size: 18px;">✅ AUTHORIZATION APPROVED</div>
+                        <div class="step-details">Total Authorization Time: 167ms • Consumer can complete purchase and leave ✓</div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Settlement Pipeline -->
+            <div class="pipeline">
+                <div class="pipeline-header">⛓️ Settlement Pipeline</div>
+                
+                <div class="pipeline-step" id="settle1">
+                    <div class="step-info">
+                        <div class="step-title">Treasury Wallet Check</div>
+                        <div class="step-details">Balance: 9,925 USDC (sufficient)</div>
+                    </div>
+                    <div class="step-status">
+                        <div class="step-time">5ms</div>
+                        <div class="step-icon pending">⏱</div>
+                    </div>
+                </div>
+                
+                <div class="pipeline-step" id="settle2">
+                    <div class="step-info">
+                        <div class="step-title">Transaction Preparation</div>
+                        <div class="step-details">Recipient: 0x742d35f8A9eC3B2d89Ab • Amount: 75.000000 USDC • Gas: 45,000 units (~$0.0008)</div>
+                    </div>
+                    <div class="step-status">
+                        <div class="step-time">8ms</div>
+                        <div class="step-icon pending">⏱</div>
+                    </div>
+                </div>
+                
+                <div class="pipeline-step" id="settle3">
+                    <div class="step-info">
+                        <div class="step-title">Broadcasting to Base Network</div>
+                        <div class="step-details">Network: Base Sepolia • RPC: Alchemy • Status: Pending...</div>
+                    </div>
+                    <div class="step-status">
+                        <div class="step-time">???ms</div>
+                        <div class="step-icon pending">⏱</div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Settlement Complete -->
+            <div class="settlement-complete" id="settlementComplete">
+                <div class="settlement-header">⛓️ SETTLEMENT COMPLETE ✅</div>
+                
+                <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 20px;">
+                    <div>
+                        <div class="tx-label">Transaction Broadcast</div>
+                        <div class="tx-value">124ms</div>
+                    </div>
+                    <div>
+                        <div class="tx-label">Block Inclusion</div>
+                        <div class="tx-value">1,876ms</div>
+                    </div>
+                    <div>
+                        <div class="tx-label">Total Settlement</div>
+                        <div class="tx-value">2,143ms</div>
+                    </div>
+                </div>
+                
+                <div class="tx-hash">
+                    <div class="tx-label">Transaction Hash</div>
+                    <div class="tx-value">0xf4a7b5c9d2e8f1a3b6c4d7e9f2a5b8c1d4e7f9a2b5c8d1e4f7a9b2c5d8e1f4a7</div>
+                </div>
+                
+                <div class="tx-hash">
+                    <div class="tx-label">Block Details</div>
+                    <div class="tx-value">Block: 12,485,293 • Confirmations: 1 • Gas Used: 44,821 • Gas Cost: $0.0008</div>
+                </div>
+                
+                <a href="https://sepolia.basescan.org/tx/0xf4a7b5c9d2e8f1a3b6c4d7e9f2a5b8c1d4e7f9a2b5c8d1e4f7a9b2c5d8e1f4a7" target="_blank" class="explorer-link">
+                    View on Base Sepolia Explorer →
+                </a>
+                
+                <div style="margin-top: 16px; padding-top: 16px; border-top: 1px solid #334155; color: #10b981; font-size: 14px;">
+                    💰 Merchant Settlement Notification Sent • GameStudio Alpha has been notified
+                </div>
+            </div>
+        </div>
+        
+        <!-- Cost Comparison -->
+        <div class="cost-comparison">
+            <div class="comparison-header">📊 Cost Analysis</div>
+            
+            <div class="comparison-grid">
+                <div class="comparison-item traditional">
+                    <div class="comparison-label">TRADITIONAL CARD</div>
+                    <div class="comparison-fee">$2.93</div>
+                    <div class="comparison-percent">(3.9% effective)</div>
+                    <div class="comparison-details">
+                        • Interchange: $2.625 (3.5%)<br>
+                        • Flat Fee: $0.30<br>
+                        • Settlement: 2-3 days<br>
+                        • Status: Pending
+                    </div>
+                </div>
+                
+                <div class="comparison-item fumav">
+                    <div class="comparison-label">FUMAV</div>
+                    <div class="comparison-fee">$0.01</div>
+                    <div class="comparison-percent">(0.01% effective)</div>
+                    <div class="comparison-details">
+                        • Gas: $0.0008<br>
+                        • Platform: $0.0075 (0.01%)<br>
+                        • Settlement: 2.1 seconds<br>
+                        • Status: Complete ✓
+                    </div>
+                </div>
+            </div>
+            
+            <div class="savings-banner">
+                <div class="savings-text">💰 Merchant Savings</div>
+                <div class="savings-amount">$2.92 per transaction (99.7%)</div>
+                <div style="margin-top: 12px; font-size: 14px; color: #94a3b8;">
+                    At GameStudio's volume (1,333 transactions/month): <strong style="color: white;">$3,892/month • $46,708/year</strong>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Recent Transactions -->
+        <div class="recent-transactions">
+            <div class="recent-header">📜 Recent Transactions</div>
+            <div class="transaction-list" id="recentList">
+                <div class="transaction-empty">No recent transactions</div>
+            </div>
+        </div>
+        
+        <!-- Control -->
+        <div style="margin-top: 24px; text-align: center;">
+            <button class="control-button" id="runDemo" onclick="runDemo()">Run Demo Again</button>
+        </div>
+    </div>
+    
+    <script>
+        let isRunning = false;
+        
+        function sleep(ms) {
+            return new Promise(resolve => setTimeout(resolve, ms));
+        }
+        
+        async function animateStep(stepId, duration) {
+            const step = document.getElementById(stepId);
+            const icon = step.querySelector('.step-icon');
+            
+            // Set to active
+            step.classList.add('active');
+            icon.classList.remove('pending');
+            icon.classList.add('active');
+            icon.textContent = '⟳';
+            
+            // Wait for duration
+            await sleep(duration);
+            
+            // Set to complete
+            step.classList.remove('active');
+            step.classList.add('complete');
+            icon.classList.remove('active');
+            icon.classList.add('complete');
+            icon.textContent = '✓';
+        }
+        
+        async function runDemo() {
+            if (isRunning) return;
+            isRunning = true;
+            
+            const button = document.getElementById('runDemo');
+            button.disabled = true;
+            button.textContent = 'Demo Running...';
+            
+            // Reset
+            document.getElementById('activeCount').textContent = '1';
+            document.getElementById('stepApproved').style.display = 'none';
+            document.getElementById('settlementComplete').classList.remove('show');
+            
+            // Reset all steps
+            ['step1', 'step2', 'step3', 'step4', 'step5', 'settle1', 'settle2', 'settle3'].forEach(id => {
+                const step = document.getElementById(id);
+                step.classList.remove('active', 'complete');
+                const icon = step.querySelector('.step-icon');
+                icon.className = 'step-icon pending';
+                icon.textContent = '⏱';
+            });
+            
+            // Authorization pipeline
+            await animateStep('step1', 12);
+            await animateStep('step2', 45);
+            await animateStep('step3', 28);
+            await animateStep('step4', 15);
+            await animateStep('step5', 67);
+            
+            // Show approval
+            document.getElementById('stepApproved').style.display = 'flex';
+            await sleep(500);
+            
+            // Settlement pipeline
+            await animateStep('settle1', 5);
+            await animateStep('settle2', 8);
+            await animateStep('settle3', 2000); // 2 seconds for blockchain
+            
+            // Show settlement complete
+            document.getElementById('settlementComplete').classList.add('show');
+            
+            // Add to recent transactions
+            const recentList = document.getElementById('recentList');
+            if (recentList.querySelector('.transaction-empty')) {
+                recentList.innerHTML = '';
+            }
+            
+            const newTx = document.createElement('div');
+            newTx.className = 'transaction-item';
+            newTx.innerHTML = `
+                <span>TXN-00847 • $75.00 • GameStudio Alpha</span>
+                <span style="color: #10b981;">Complete • 2.1s</span>
+            `;
+            recentList.insertBefore(newTx, recentList.firstChild);
+            
+            // Keep only last 3
+            while (recentList.children.length > 3) {
+                recentList.removeChild(recentList.lastChild);
+            }
+            
+            // Reset
+            document.getElementById('activeCount').textContent = '0';
+            button.disabled = false;
+            button.textContent = 'Run Demo Again';
+            isRunning = false;
+        }
+        
+        // Auto-run on page load
+        window.addEventListener('load', () => {
+            setTimeout(runDemo, 1000);
+        });
+    </script>
+</body>
+</html>
